@@ -13,7 +13,7 @@ bun test tests/
 
 The generator writes `VERSION` into the two plugin manifests and stamps model defaults from `plugins/pstack/models.json`. It also owns the line under the first heading of the playbooks in `DRIVER_PLAYBOOKS` — that line anywhere else fails the generator — and removes a retired lead line wherever one remains. It validates each skill's `name` and `description` against the [slash-command table](docs/reference.md#slash-commands).
 
-It also copies the four files in `PORTABLE_ASSETS` (the `comment-sicko` agent copy plus the license and notice files) into `poteto-mode/references/` and removes stale generated files.
+It also copies the license and notice files in `PORTABLE_ASSETS` into `poteto-mode/references/` and removes stale generated files. The generator derives the effort and model-inheritance agent variants from the base coordinator and worker definitions.
 
 The generator rejects missing Markdown links, links outside the skills tree, and instructions to open unreachable files. It checks for stray model names, requires a matching `CHANGES.md` heading, and validates the Claude hook paths. It also enforces these rules:
 
@@ -29,6 +29,8 @@ When adding a skill, include `name` and `description` in its frontmatter. Public
 Change model defaults in `models.json`, never in a skill body. A role names a tier from `tiers` (`default`, `strongest`, or `panel`), so moving a tier is one edit. The generator checks the configuration's structure as it loads it (`parseModels` in `tools/generate.mjs`) and fails naming the offending role, tier, or slug. `tests/models.test.mjs` proves each malformed shape is rejected and checks that skills name every role they use. A full `claude-*` ID or a backticked available name such as `` `fable` `` outside a generated region fails the generator with its file and line.
 
 `bun test tests/` covers the generator, the link validator, and `tests/invariants.test.mjs`, which builds fixture trees that must trip each layout invariant. One check is behavioral and lives in `tests/skill-collision-repro.sh`: it needs the `claude` CLI and API access and makes one haiku call to prove a user-typed `/plugin:name` reaches a skill with no `commands/` present. CI cannot run it, so run it locally at least once before a release.
+
+When changing delegation instructions, keep the [Claude Code delegation contract](plugins/pstack/skills/poteto-mode/references/claude-code-delegation.md), coordinator and worker definitions, and playbooks consistent. `tests/skill-rules.test.mjs` pins critical lifecycle and worktree rules. State the Claude Code version used for any live agent check; static tests establish repository consistency but do not prove runtime loading, model selection, or the effective tool set.
 
 If you touched `skills/poteto-mode/scripts/`:
 
