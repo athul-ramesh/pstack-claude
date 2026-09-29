@@ -1,8 +1,8 @@
-// models.json is the model policy every stamped Models section, the override
-// sheet, and the Codex mapping derive from. parseModels checks its shape when
-// the generator loads it, and a role label is the runtime join key between the
-// override sheet the user writes and the prose that tells the agent which role
-// to look up.
+// models.json is the model policy every stamped Models section and the
+// override sheet derive from. parseModels checks its shape when the generator
+// loads it, and a role label is the runtime join key between the override
+// sheet the user writes and the prose that tells the agent which role to look
+// up.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -48,7 +48,7 @@ describe("parseModels", () => {
 
   test("a missing top-level key throws naming it", () => {
     expect(parse((p) => delete p.efforts)).toThrow('models.json: "efforts" must be a list');
-    expect(parse((p) => delete p.codex)).toThrow('models.json: "codex" must be an object');
+    expect(parse((p) => delete p.tiers)).toThrow('models.json: "tiers" must be an object');
   });
 
   test("a role naming an undefined tier throws naming the role and the tier", () => {
@@ -93,7 +93,6 @@ describe("parseModels", () => {
   test("a duplicate slug in available or in a panel throws naming it", () => {
     expect(parse((p) => p.available.push("opus"))).toThrow('models.json: available lists "opus" twice');
     expect(parse((p) => (p.tiers.panel = ["opus", "opus"]))).toThrow('models.json: tier "panel" lists "opus" twice');
-    expect(parse((p) => (p.codex.panel = ["a", "a"]))).toThrow('models.json: codex "panel" lists "a" twice');
   });
 
   test("an effort level Claude Code does not accept, or a repeated one, throws naming it", () => {
@@ -107,11 +106,6 @@ describe("parseModels", () => {
     expect(parse((p) => (p.defaultEffort = "hgih"))).toThrow(
       'models.json: defaultEffort "hgih" is not an effort level or "session"',
     );
-  });
-
-  test("a codex block that misses or adds a tier throws naming the tier", () => {
-    expect(parse((p) => delete p.codex.strongest)).toThrow('models.json: codex has no example for tier "strongest"');
-    expect(parse((p) => (p.codex.fastest = "gpt"))).toThrow('models.json: codex names "fastest", which is not a tier');
   });
 });
 

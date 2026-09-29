@@ -20,9 +20,8 @@
 //   plugins/pstack/{agents,effort-agents}/*.md -> the "agents" list in
 //     plugins/pstack/.claude-plugin/plugin.json (a list replaces the default
 //     agents/ directory, so it names every agent)
-//   plugins/pstack/agents/comment-sicko.md, LICENSE, LICENSE-cursor-team-kit,
-//   and NOTICE.md
-//     -> portable copies under poteto-mode/references/{agents,licenses}/
+//   LICENSE, LICENSE-cursor-team-kit, and NOTICE.md
+//     -> portable copies under poteto-mode/references/licenses/
 //   No other model name (a claude-* ID or a backticked family name) may appear
 //   in skill prose; the scan below fails on strays.
 //
@@ -58,10 +57,6 @@ const VERSIONED_MANIFESTS = [
 ];
 
 export const PORTABLE_ASSETS = [
-  {
-    source: "plugins/pstack/agents/comment-sicko.md",
-    target: "poteto-mode/references/agents/comment-sicko.md",
-  },
   { source: "LICENSE", target: "poteto-mode/references/licenses/LICENSE" },
   {
     source: "LICENSE-cursor-team-kit",
@@ -72,11 +67,7 @@ export const PORTABLE_ASSETS = [
 
 // The generator removes every entry of these directories that no planned path
 // runs through, so no hand-written file may live in one.
-export const OWNED_DIRS = [
-  EFFORT_AGENTS,
-  `${SKILLS}/poteto-mode/references/agents`,
-  `${SKILLS}/poteto-mode/references/licenses`,
-];
+export const OWNED_DIRS = [EFFORT_AGENTS, `${SKILLS}/poteto-mode/references/licenses`];
 
 // Replace the manifest's single "version" value, preserving all formatting.
 // Exactly one "version" field per manifest is a precondition: a second one

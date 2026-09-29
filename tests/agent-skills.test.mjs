@@ -14,19 +14,16 @@ import { fileURLToPath } from "node:url";
 
 import {
   agentSkills,
-  codexModelNamesSection,
   PORTABLE_ASSETS,
   plan,
   problems,
   publicSkills,
-  resolveModels,
 } from "../tools/generate.mjs";
 import { validateProsePaths, validateSkillsTree, walk } from "../tools/validate-skills.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const skillsDir = join(repoRoot, "plugins/pstack/skills");
 const requiredPortableFiles = [
-  "poteto-mode/references/agents/comment-sicko.md",
   "poteto-mode/references/licenses/LICENSE",
   "poteto-mode/references/licenses/LICENSE-cursor-team-kit",
   "poteto-mode/references/licenses/NOTICE.md",
@@ -197,16 +194,6 @@ describe("shared Agent Skills tree", () => {
     }
   });
 
-  test("every vendored subagent definition has a skill that tells Codex to read it", () => {
-    const prose = walk(skillsDir)
-      .filter((file) => file.endsWith(".md"))
-      .map((file) => readFileSync(file, "utf8"))
-      .join("\n");
-    const vendored = PORTABLE_ASSETS.map(({ target }) => target).filter((target) => target.includes("/agents/"));
-    expect(vendored.length).toBeGreaterThan(0);
-    expect(vendored.filter((target) => !prose.includes(target))).toEqual([]);
-  });
-
   test("every required portable asset lives inside the skills tree", () => {
     for (const file of requiredPortableFiles) {
       expect(existsSync(join(skillsDir, file))).toBe(true);
@@ -223,7 +210,7 @@ describe("shared Agent Skills tree", () => {
 
   test("linked skills keep their own resources and sibling principle leaves", () => {
     const root = mkdtempSync(join(tmpdir(), "pstack-agent-skills-"));
-    const installed = join(root, "unrelated-home", ".agents", "skills");
+    const installed = join(root, "unrelated-home", ".claude", "skills");
     mkdirSync(installed, { recursive: true });
 
     try {
@@ -234,7 +221,7 @@ describe("shared Agent Skills tree", () => {
       const poteto = join(installed, "poteto-mode");
       for (const file of [
         join(poteto, "SKILL.md"),
-        join(poteto, "references", "codex-tools.md"),
+        join(poteto, "references", "merge-safety.md"),
         join(poteto, "..", "principle-model-the-domain", "SKILL.md"),
       ]) {
         expect(readFileSync(file, "utf8").length).toBeGreaterThan(0);
@@ -282,19 +269,3 @@ describe("agentSkills reads frontmatter as YAML", () => {
   });
 });
 
-describe("Codex model names", () => {
-  test("names a strongest Codex model for the roles that default to it on Claude", () => {
-    const raw = JSON.parse(readFileSync(join(repoRoot, "plugins/pstack/models.json"), "utf8"));
-    const oneOff = raw.roles.map((r) => (r.role === "swarm workers" ? { ...r, models: ["haiku"] } : r));
-    const section = codexModelNamesSection(resolveModels({ ...raw, roles: oneOff }));
-    const strongestLine = section.split("\n").find((line) => line.includes("strongest Claude model"));
-
-    expect(strongestLine).not.toContain("swarm workers");
-
-    expect(strongestLine).toContain(`\`${raw.codex.strongest}\``);
-    for (const role of ["bug-fix", "perf-issue", "hillclimb", "strongest judgment"]) {
-      expect(section).toContain(role);
-    }
-    for (const family of raw.available) expect(section).not.toContain(`\`${family}\``);
-  });
-});
