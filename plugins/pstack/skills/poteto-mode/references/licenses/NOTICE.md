@@ -21,7 +21,7 @@ This plugin is a port of upstream MIT-licensed work. The port's modifications an
 
 ## What changed in the port
 
-The port is editorial, not mechanical. [CHANGES.md](https://github.com/michael-denyer/pstack-claude/blob/main/CHANGES.md) records each release's changes.
+The port is editorial, not mechanical. [CHANGES.md](https://github.com/athul-ramesh/pstack-claude/blob/main/CHANGES.md) records each release's changes.
 
 Summary of structural changes:
 

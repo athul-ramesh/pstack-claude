@@ -9,12 +9,12 @@
     "email": "mdenyer@gmail.com",
     "url": "https://github.com/michael-denyer"
   },
-  "homepage": "https://github.com/michael-denyer/pstack-claude",
-  "repository": "https://github.com/michael-denyer/pstack-claude",
-  "documentationUrl": "https://github.com/michael-denyer/pstack-claude/blob/main/docs/reference.md",
-  "supportUrl": "https://github.com/michael-denyer/pstack-claude/issues",
-  "privacyPolicyUrl": "https://github.com/michael-denyer/pstack-claude/blob/main/README.md#data-handling",
-  "termsOfServiceUrl": "https://github.com/michael-denyer/pstack-claude/blob/main/LICENSE",
+  "homepage": "https://github.com/athul-ramesh/pstack-claude",
+  "repository": "https://github.com/athul-ramesh/pstack-claude",
+  "documentationUrl": "https://github.com/athul-ramesh/pstack-claude/blob/main/docs/reference.md",
+  "supportUrl": "https://github.com/athul-ramesh/pstack-claude/issues",
+  "privacyPolicyUrl": "https://github.com/athul-ramesh/pstack-claude/blob/main/README.md#data-handling",
+  "termsOfServiceUrl": "https://github.com/athul-ramesh/pstack-claude/blob/main/LICENSE",
   "license": "MIT",
   "keywords": [
     "pstack",

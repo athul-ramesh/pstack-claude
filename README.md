@@ -9,7 +9,7 @@ Tell `poteto-mode` your goal and it will invoke the correct workflow for the tas
 Run in Claude Code:
 
 ```text
-/plugin marketplace add michael-denyer/pstack-claude
+/plugin marketplace add athul-ramesh/pstack-claude
 /plugin install pstack@pstack-claude
 ```
 
