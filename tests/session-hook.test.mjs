@@ -1,5 +1,5 @@
-// Each runtime's shipped SessionStart command, run for real: the mandate is
-// injected unless that runtime's model sheet turns it off.
+// The shipped SessionStart command, run for real: the mandate is injected
+// unless the Claude Code model sheet turns it off.
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -11,36 +11,23 @@ import { agentSkills } from "../tools/generate.mjs";
 
 const pluginRoot = fileURLToPath(new URL("../plugins/pstack/", import.meta.url));
 const mandate = readFileSync(join(pluginRoot, "hooks/session-start-context.md"), "utf8");
-const codexManifest = JSON.parse(readFileSync(join(pluginRoot, ".codex-plugin/plugin.json"), "utf8"));
 
-// Claude Code loads hooks/hooks.json by convention; Codex loads the file its manifest names.
-const sessionStart = Object.fromEntries(
-  Object.entries({ claude: "hooks/hooks.json", codex: codexManifest.hooks }).map(([runtime, file]) => [
-    runtime,
-    JSON.parse(readFileSync(join(pluginRoot, file), "utf8")).hooks.SessionStart[0],
-  ]),
-);
+// Claude Code loads hooks/hooks.json by convention.
+const sessionStart = JSON.parse(readFileSync(join(pluginRoot, "hooks/hooks.json"), "utf8")).hooks.SessionStart[0];
 
-// CODEX_HOME and CLAUDE_CONFIG_DIR are only present when the user has
-// relocated that runtime's directory. PLUGIN_ROOT is a generic name any shell
-// profile may export, so it must not move a Claude Code session to Codex's sheet.
+// CLAUDE_CONFIG_DIR is only present when the user has relocated the Claude
+// Code configuration directory. PLUGIN_ROOT is a generic name any shell
+// profile may export, so it must not move where the hook looks for the sheet.
 const runtimes = {
-  claude: { hooks: "claude", sheetDir: ".claude", env: () => ({}) },
+  claude: { sheetDir: ".claude", env: () => ({}) },
   "claude with CLAUDE_CONFIG_DIR": {
-    hooks: "claude",
     sheetDir: "claude-config",
     env: (sheetRoot) => ({ CLAUDE_CONFIG_DIR: sheetRoot }),
   },
-  "claude with PLUGIN_ROOT exported": { hooks: "claude", sheetDir: ".claude", env: () => ({ PLUGIN_ROOT: pluginRoot }) },
-  codex: { hooks: "codex", sheetDir: ".codex", env: () => ({}) },
-  "codex with CODEX_HOME": {
-    hooks: "codex",
-    sheetDir: "codex-home",
-    env: (sheetRoot) => ({ CODEX_HOME: sheetRoot }),
-  },
+  "claude with PLUGIN_ROOT exported": { sheetDir: ".claude", env: () => ({ PLUGIN_ROOT: pluginRoot }) },
 };
 
-function runHook(runtime, sheet, command = sessionStart[runtimes[runtime].hooks].hooks[0].command) {
+function runHook(runtime, sheet, command = sessionStart.hooks[0].command) {
   const home = mkdtempSync(join(tmpdir(), "pstack-hook-"));
   const { sheetDir, env } = runtimes[runtime];
   const sheetRoot = join(home, sheetDir);
@@ -60,12 +47,9 @@ function runHook(runtime, sheet, command = sessionStart[runtimes[runtime].hooks]
 }
 
 describe("SessionStart hook", () => {
-  // The manifest names Codex's own hooks file instead of relying on Codex's
-  // default discovery; `resume` keeps the mandate present after a restart.
-  test("declares the hook in the Codex manifest", () => {
-    expect(codexManifest.hooks).toBe("./hooks/codex-hooks.json");
-    expect(sessionStart.claude.matcher).toBe("startup|resume|clear|compact");
-    expect(sessionStart.codex.matcher).toBe("startup|resume|clear|compact");
+  test("declares the hook with no runtime argument", () => {
+    expect(sessionStart.matcher).toBe("startup|resume|clear|compact");
+    expect(sessionStart.hooks[0].command).toBe('"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh"');
   });
 
   test("names only skills that exist", () => {
@@ -74,15 +58,6 @@ describe("SessionStart hook", () => {
     expect(named).toContain("poteto-mode");
     expect(named.filter((name) => !skills.has(name))).toEqual([]);
   });
-
-  for (const arg of ["cursor", ""]) {
-    test(`fails on runtime argument ${JSON.stringify(arg)}`, () => {
-      const r = runHook("claude", null, `"\${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh" ${arg}`);
-      expect(r.status).not.toBe(0);
-      expect(r.out).toBe("");
-      expect(r.err.trimEnd().split("\n")).toEqual([`session-start.sh: unknown runtime '${arg}' (expected claude or codex)`]);
-    });
-  }
 
   for (const runtime of Object.keys(runtimes)) {
     describe(runtime, () => {

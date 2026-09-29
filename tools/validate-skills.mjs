@@ -59,12 +59,12 @@ export function pathIsInside(root, path) {
 }
 
 // A backticked path in prose is not a markdown link, so validateSkillsTree
-// never sees it; that is how codex-tools.md came to tell the reader to open
-// agents/comment-sicko.md, a file a skills-only install lacks. The defect is
-// a filesystem fact: the token names something that exists in the plugin
-// (beside the skills tree, or reachable through ../) but not inside the
-// tree. Tokens that resolve to nothing are placeholders, slash commands, or
-// maintainer notes and are left alone.
+// never sees it; that is how a reference doc once came to tell the reader to
+// open agents/comment-sicko.md, a file a skills-only install lacks. The
+// defect is a filesystem fact: the token names something that exists in the
+// plugin (beside the skills tree, or reachable through ../) but not inside
+// the tree. Tokens that resolve to nothing are placeholders, slash commands,
+// or maintainer notes and are left alone.
 function prosePathProblems(text, file, root) {
   const pluginRoot = dirname(root);
   const problems = [];

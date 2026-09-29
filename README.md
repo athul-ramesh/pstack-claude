@@ -1,32 +1,19 @@
 # pstack
 
-Lauren Tan's [pstack](https://github.com/cursor/plugins/tree/main/pstack) is an opinionated Cursor skill stack that improves agent outcomes. This is a port for Claude Code, Codex and other agent harnesses. It tracks upstream and also carries named policy forks, each declared in [`tools/forks.json`](tools/forks.json).
+Lauren Tan's [pstack](https://github.com/cursor/plugins/tree/main/pstack) is an opinionated Cursor skill stack that improves agent outcomes. This is a port for Claude Code, maintained as a standalone fork of upstream cursor/plugins.
 
 Tell `poteto-mode` your goal and it will invoke the correct workflow for the task. It keeps your code concise, simple and verified.
 
 ## Install
 
-### Claude Code
-
 Run in Claude Code:
 
 ```text
-/plugin marketplace add michael-denyer/pstack-claude
+/plugin marketplace add athul-ramesh/pstack-claude
 /plugin install pstack@pstack-claude
 ```
 
-### Codex
-
-Run in your terminal:
-
-```shell
-codex plugin marketplace add michael-denyer/pstack-claude
-codex plugin add pstack@pstack-claude
-```
-
-Run `setup-pstack` to change model defaults, set a reasoning effort per role (for example `arena runners: opus @xhigh, fable @max`, which Claude Code dispatches through the plugin's `pstack:effort-<level>` or `pstack:poteto-agent-<level>` agents; roles without a level keep the session's effort unless the sheet's `default effort` line names one), or turn automatic routing off. The plugin installs the routing hook on Claude Code and Codex; Codex asks you to trust it through `/hooks` before it runs. In Claude Code, use `/pstack:setup-pstack`.
-
-For Prime Agent, OpenCode, Gemini CLI, or skills-only installs for any harness, see [shared installation](docs/reference.md#shared-skills-installation).
+Run `/pstack:setup-pstack` to change model defaults, set a reasoning effort per role (for example `arena runners: opus @xhigh, fable @max`, which Claude Code dispatches through the plugin's `pstack:effort-<level>` or `pstack:poteto-agent-<level>` agents; roles without a level keep the session's effort unless the sheet's `default effort` line names one), or turn automatic routing off.
 
 ## Getting started
 
@@ -51,15 +38,15 @@ For a bug, it reproduces the failure, uses `how` and `why` to investigate, deleg
 
 pstack is Markdown instructions, a session hook, and local scripts. It runs no server, collects no telemetry, and sends no data anywhere itself. What each part touches:
 
-- The SessionStart hook reads one file, `pstack-models.md`, from the runtime's configuration directory (`$CLAUDE_CONFIG_DIR` or `~/.claude` on Claude Code, `$CODEX_HOME` or `~/.codex` on Codex) to decide whether to inject the poteto-mode mandate. It reads nothing else and sends nothing.
+- The SessionStart hook reads one file, `pstack-models.md`, from the Claude Code configuration directory (`$CLAUDE_CONFIG_DIR` or `~/.claude`) to decide whether to inject the poteto-mode mandate. It reads nothing else and sends nothing.
 - The `watch-pr` and `ship-pr` scripts call the GitHub CLI (`gh`) with your own login to read and act on your own pull requests. They read no token themselves and talk to no service other than GitHub through `gh`.
 - On first use, those scripts install their one npm dependency, `commander`, at the version pinned in `bun.lock`, into the plugin's own `scripts/node_modules`.
 - `watch-pr/live-merge-safety.mjs` runs only when you start it by hand with `--live-disposable`; it creates a private repository on your `gh` account, drives `ship-pr` against it, and deletes it.
-- `worktree-audit.mjs` and the `recall` and `eval` playbooks read Claude Code session transcripts on the local machine, under the runtime's transcripts directory, to find which files a session touched. Transcripts stay on disk.
+- `worktree-audit.mjs` and the `recall` and `eval` playbooks read Claude Code session transcripts on the local machine, under the Claude Code transcripts directory, to find which files a session touched. Transcripts stay on disk.
 
 ## Contributing
 
-Thanks for helping make this port better. Bug reports, documentation fixes, and runtime improvements are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and where your change belongs. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+Thanks for helping make this port better. Bug reports, documentation fixes, and workflow improvements are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and where your change belongs. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
 ## License
 

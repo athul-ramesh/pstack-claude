@@ -1,20 +1,20 @@
 {
   "name": "pstack",
-  "displayName": "pstack (Claude Code port)",
+  "displayName": "pstack",
   "icon": "./assets/pstack-icon.png",
-  "version": "0.9.50",
+  "version": "0.10.0",
   "description": "if you want to go fast, go deep first. pstack helps you write less, but higher quality code. rigorous agent workflows you can parallelize with confidence. Ported from cursor/plugins/pstack to Claude Code. Original pstack by Lauren Tan (poteto).",
   "author": {
     "name": "Michael Denyer",
     "email": "mdenyer@gmail.com",
     "url": "https://github.com/michael-denyer"
   },
-  "homepage": "https://github.com/michael-denyer/pstack-claude",
-  "repository": "https://github.com/michael-denyer/pstack-claude",
-  "documentationUrl": "https://github.com/michael-denyer/pstack-claude/blob/main/docs/reference.md",
-  "supportUrl": "https://github.com/michael-denyer/pstack-claude/issues",
-  "privacyPolicyUrl": "https://github.com/michael-denyer/pstack-claude/blob/main/README.md#data-handling",
-  "termsOfServiceUrl": "https://github.com/michael-denyer/pstack-claude/blob/main/LICENSE",
+  "homepage": "https://github.com/athul-ramesh/pstack-claude",
+  "repository": "https://github.com/athul-ramesh/pstack-claude",
+  "documentationUrl": "https://github.com/athul-ramesh/pstack-claude/blob/main/docs/reference.md",
+  "supportUrl": "https://github.com/athul-ramesh/pstack-claude/issues",
+  "privacyPolicyUrl": "https://github.com/athul-ramesh/pstack-claude/blob/main/README.md#data-handling",
+  "termsOfServiceUrl": "https://github.com/athul-ramesh/pstack-claude/blob/main/LICENSE",
   "license": "MIT",
   "keywords": [
     "pstack",
@@ -28,11 +28,7 @@
     "skills",
     "tdd",
     "code-review",
-    "parallel-agents",
-    "codex",
-    "opencode",
-    "gemini-cli",
-    "prime-agent"
+    "parallel-agents"
   ],
   "agents": [
     "./agents/comment-sicko.md",
