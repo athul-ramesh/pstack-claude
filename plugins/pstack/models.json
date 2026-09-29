@@ -25,10 +25,5 @@
     { "role": "swarm workers", "models": "default", "skill": "swarm" },
     { "role": "architect runners", "models": "panel", "skill": "architect" },
     { "role": "interrogate reviewers", "models": "panel", "skill": "interrogate" }
-  ],
-  "codex": {
-    "default": "gpt-6-sol",
-    "strongest": "gpt-6-astra",
-    "panel": ["gpt-6-astra", "gpt-6-sol", "gpt-6-luna"]
-  }
+  ]
 }

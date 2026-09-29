@@ -1,6 +1,6 @@
 {
   "name": "pstack",
-  "displayName": "pstack (Claude Code port)",
+  "displayName": "pstack",
   "icon": "./assets/pstack-icon.png",
   "version": "0.9.50",
   "description": "if you want to go fast, go deep first. pstack helps you write less, but higher quality code. rigorous agent workflows you can parallelize with confidence. Ported from cursor/plugins/pstack to Claude Code. Original pstack by Lauren Tan (poteto).",
@@ -28,11 +28,7 @@
     "skills",
     "tdd",
     "code-review",
-    "parallel-agents",
-    "codex",
-    "opencode",
-    "gemini-cli",
-    "prime-agent"
+    "parallel-agents"
   ],
   "agents": [
     "./agents/comment-sicko.md",
