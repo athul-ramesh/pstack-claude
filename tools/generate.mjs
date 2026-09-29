@@ -15,7 +15,7 @@
 //   available slugs, reasoning-effort levels)
 //     -> each model-consuming skill's "## Models" and "## Reasoning effort" sections
 //     -> setup-pstack's Models section and override-sheet block, and interrogate's reviewer table
-//     -> one effort agent pair per level in plugins/pstack/effort-agents/
+//     -> generic and role-specific effort agents in plugins/pstack/effort-agents/
 //   DRIVER_PLAYBOOKS -> the driver-skill line under each playbook's first heading
 //   plugins/pstack/{agents,effort-agents}/*.md -> the "agents" list in
 //     plugins/pstack/.claude-plugin/plugin.json (a list replaces the default
@@ -469,41 +469,86 @@ export function effortSection(levels, defaultEffort) {
     "A role value in the override sheet may name a reasoning effort after its model, as in `opus @xhigh`. " +
     "Levels: " + codeList(levels) + ". Which ones apply depends on the model. " +
     "A value without `@` takes the sheet's `default effort` line, a level or `session`, " +
-    `and ${code(defaultEffort)} when the sheet has no such line. \`session\` sets no effort, so the dispatch ` +
-    "is the usual one. Strip the suffix before reading the model: `inherit-parent` or `auto` still omits `model` " +
-    "at every level, and a model name is passed as `model`. " +
+    `and ${code(defaultEffort)} when the sheet has no such line. \`session\` sets no agent effort override, ` +
+    "so the effective effort follows Claude Code's session and environment settings or caps. " +
+    "Strip the suffix before choosing the model: a model name is passed as `model`; " +
+    "`auto` omits it and accepts Claude Code's runtime default; `inherit-parent` omits it and selects " +
+    "a matching `model: inherit` definition. On Claude Code before 2.1.251, " +
+    "`CLAUDE_CODE_SUBAGENT_MODEL` can override both the invocation and definition. " +
     "A level picks the effort agent from the `subagent_type` you would otherwise use. " +
-    "`pstack:poteto-agent` becomes `subagent_type: \"pstack:poteto-agent-<level>\"`. " +
+    "`pstack:poteto-agent` becomes `subagent_type: \"pstack:poteto-agent-<level>\"`; " +
+    "`pstack:poteto-worker` becomes `subagent_type: \"pstack:poteto-worker-<level>\"`; " +
     "`general-purpose`, or no `subagent_type`, becomes `subagent_type: \"pstack:effort-<level>\"`. " +
-    "The effort agents set only `effort`, so the model you pass still decides the model."
+    "For `inherit-parent`, use `pstack:poteto-agent-inherit[-<level>]` for the coordinator, " +
+    "`pstack:poteto-worker-inherit[-<level>]` for bounded implementation, or " +
+    "`pstack:inherit[-<level>]` for a generic worker; the bracketed level is omitted for `session`. " +
+    "These definitions set `model: inherit`; explicit model entries still use the non-inherit definitions."
   );
 }
 
-// The effort agents: one general-purpose worker and one poteto-agent per level.
-// The poteto variants carry poteto-agent's body. Their descriptions name
-// pstack:poteto-agent instead of copying its routing contract, so only the
-// base agent reads as the routing target for /poteto-mode.
-export function effortAgents(levels, potetoAgent) {
-  const { body } = parseFrontmatter(potetoAgent);
-  return levels.flatMap((level) => [
+const genericBody = "\n# pstack subagent\n\nDo the task in your prompt. Stay within its scope and report the result with evidence.\n";
+
+// Generated variants preserve the base agent's instructions while changing
+// only the requested effort or explicit parent-model inheritance.
+export function effortAgents(levels, potetoAgent, potetoWorker) {
+  const { body: coordinatorBody } = parseFrontmatter(potetoAgent);
+  const { body: workerBody } = parseFrontmatter(potetoWorker);
+  const quoted = (description) => JSON.stringify(description);
+  const inherited = [
     {
-      name: `effort-${level}`,
-      text:
-        `---\nname: effort-${level}\ndescription: pstack subagent with the full tool set that runs at ${level} reasoning effort. ` +
-        `Its system prompt is this file, not the built-in \`general-purpose\` prompt. Dispatched in place of ` +
-        `\`general-purpose\` when a pstack role's override names \`@${level}\`. The caller passes the model.\n` +
-        `effort: ${level}\n---\n\n# pstack subagent (${level} effort)\n\n` +
-        "Do the task in your prompt. You have the full tool set. " +
-        "The effort level changes how long you reason, not the task.\n",
+      name: "inherit",
+      text: `---\nname: inherit\ndescription: ${quoted("Generic pstack task agent that inherits the main conversation model.")}\nmodel: inherit\n---\n${genericBody}`,
     },
     {
-      name: `poteto-agent-${level}`,
-      text:
-        `---\nname: poteto-agent-${level}\ndescription: \`pstack:poteto-agent\` at ${level} reasoning effort. ` +
-        `Dispatched in place of \`pstack:poteto-agent\` when a pstack role's override names \`@${level}\`. The caller passes the model.\n` +
-        `effort: ${level}\n---\n` + body,
+      name: "poteto-agent-inherit",
+      text: `---\nname: poteto-agent-inherit\ndescription: ${quoted("Poteto coordinator style agent that inherits the main conversation model.")}\nmodel: inherit\n---\n${coordinatorBody}`,
     },
-  ]);
+    {
+      name: "poteto-worker-inherit",
+      text: `---\nname: poteto-worker-inherit\ndescription: ${quoted("Bounded poteto worker that inherits the main conversation model.")}\nmodel: inherit\n---\n${workerBody}`,
+    },
+  ];
+  return [
+    ...inherited,
+    ...levels.flatMap((level) => [
+      {
+        name: `effort-${level}`,
+        text:
+          `---\nname: effort-${level}\ndescription: ${quoted(`Generic pstack task agent at ${level} reasoning effort. The caller selects the model.`)}\n` +
+          `effort: ${level}\n---\n${genericBody}`,
+      },
+      {
+        name: `inherit-${level}`,
+        text:
+          `---\nname: inherit-${level}\ndescription: ${quoted(`Generic pstack task agent at ${level} effort that inherits the main conversation model.`)}\n` +
+          `model: inherit\neffort: ${level}\n---\n${genericBody}`,
+      },
+      {
+        name: `poteto-agent-${level}`,
+        text:
+          `---\nname: poteto-agent-${level}\ndescription: ${quoted(`pstack:poteto-agent at ${level} reasoning effort; preserves the coordinator style.`)}\n` +
+          `effort: ${level}\n---\n${coordinatorBody}`,
+      },
+      {
+        name: `poteto-agent-inherit-${level}`,
+        text:
+          `---\nname: poteto-agent-inherit-${level}\ndescription: ${quoted(`Poteto coordinator style agent at ${level} effort that inherits the main conversation model.`)}\n` +
+          `model: inherit\neffort: ${level}\n---\n${coordinatorBody}`,
+      },
+      {
+        name: `poteto-worker-${level}`,
+        text:
+          `---\nname: poteto-worker-${level}\ndescription: ${quoted(`Bounded poteto implementation worker at ${level} reasoning effort.`)}\n` +
+          `effort: ${level}\n---\n${workerBody}`,
+      },
+      {
+        name: `poteto-worker-inherit-${level}`,
+        text:
+          `---\nname: poteto-worker-inherit-${level}\ndescription: ${quoted(`Bounded poteto worker at ${level} effort that inherits the main conversation model.`)}\n` +
+          `model: inherit\neffort: ${level}\n---\n${workerBody}`,
+      },
+    ]),
+  ];
 }
 
 const AGENT_DIRS = ["agents", "effort-agents"];
@@ -518,6 +563,32 @@ export function pluginAgentPaths(pluginRoot) {
           .map((f) => `./${dir}/${f}`)
       : [],
   );
+}
+
+export function validateAgentDefinitions(pluginRoot) {
+  for (const path of pluginAgentPaths(pluginRoot)) {
+    const file = join(pluginRoot, path);
+    let front;
+    try {
+      front = parseFrontmatter(readFileSync(file, "utf8")).data;
+    } catch (error) {
+      throw new Error(`${path}: invalid agent YAML frontmatter: ${error.message}`);
+    }
+    if (!front || typeof front !== "object" || Array.isArray(front)) {
+      throw new Error(`${path}: agent needs YAML frontmatter`);
+    }
+    const expected = basename(path, ".md");
+    if (front.name !== expected) throw new Error(`${path}: agent name must be ${expected}`);
+    if (typeof front.description !== "string" || !front.description.trim()) {
+      throw new Error(`${path}: agent needs a nonempty description`);
+    }
+    if (front.model !== undefined && (typeof front.model !== "string" || !front.model.trim())) {
+      throw new Error(`${path}: agent model must be a nonempty string when supplied`);
+    }
+    if (front.effort !== undefined && !["low", "medium", "high", "xhigh", "max"].includes(front.effort)) {
+      throw new Error(`${path}: unsupported agent effort ${front.effort}`);
+    }
+  }
 }
 
 export function stampAgentPaths(manifestText, paths) {
@@ -543,11 +614,15 @@ export function overrideSheetBlock(models) {
     "# pstack model configuration\n\n" +
     "Per-role model overrides for pstack skills. Each pstack SKILL.md names its defaults in a Models section; " +
     "the values here override those defaults. Delete a line to fall back to the skill default. " +
-    "A value of `inherit-parent` or `auto` runs that role on the parent session's model (the `Agent` call omits `model`); " +
-    "an alias entry in a panel list still counts toward that panel's fan-out. " +
+    "`auto` omits the invocation model and uses Claude Code's runtime model order; `inherit-parent` " +
+    "uses `pstack:inherit`, `pstack:poteto-agent-inherit`, or `pstack:poteto-worker-inherit` " +
+    "(and their effort variants), each with `model: inherit`; " +
+    "on Claude Code before 2.1.251, `CLAUDE_CODE_SUBAGENT_MODEL` may override either choice. " +
+    "An alias entry in a panel list still counts toward that panel's fan-out. " +
     "A model may carry a reasoning effort, as in `opus @xhigh` (levels: " + models.efforts.join(", ") + "); " +
     "the role then runs through the pstack effort agent of that level, each entry of a panel list on its own. " +
-    "`default effort` sets the level for a value without one; `session` keeps the parent session's effort. " +
+    "`default effort` sets the level for a value without one; `session` sets no agent effort override " +
+    "and lets Claude Code's session, environment, and caps determine effective effort. " +
     "`session hook: off` stops the SessionStart hook from injecting the poteto-mode mandate; " +
     "any other value, or no line, leaves it on.\n\n" +
     rows +
@@ -643,7 +718,11 @@ export function plan(root, models) {
   // The slash-command table documents the public skills; nothing renders from
   // it, but a row/skill mismatch still fails the plan.
   slashCommands(read(COMMANDS_DOC), publicSkills(join(root, SKILLS)));
-  const agents = effortAgents(models.efforts, read(`${PLUGIN}/agents/poteto-agent.md`));
+  const agents = effortAgents(
+    models.efforts,
+    read(`${PLUGIN}/agents/poteto-agent.md`),
+    read(`${PLUGIN}/agents/poteto-worker.md`),
+  );
   for (const agent of agents) put(`${EFFORT_AGENTS}/${agent.name}.md`, agent.text);
   stamp(`${PLUGIN}/.claude-plugin/plugin.json`, (text) =>
     stampAgentPaths(text, [
@@ -763,6 +842,7 @@ export function problems(root, models) {
   attempt(() => validateSkillsTree(skillsDir));
   attempt(() => validateProsePaths(skillsDir));
   attempt(() => validatePluginLayout(pluginRoot));
+  attempt(() => validateAgentDefinitions(pluginRoot));
   attempt(() =>
     validateHooks(readFileSync(join(pluginRoot, "hooks/hooks.json"), "utf8"), { statOf, file: "hooks/hooks.json" }),
   );

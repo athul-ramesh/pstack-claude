@@ -7,6 +7,8 @@ description: "Spawn N parallel candidates at the same task, pick a base, graft t
 
 Fan out N parallel attempts at the same task. Read every candidate end to end. Pick the strongest as the base. Graft the best ideas from the others into it. Verify the synthesized result.
 
+Read and follow the [Claude Code delegation contract](../poteto-mode/references/claude-code-delegation.md) before dispatch.
+
 ## Start
 
 Open a todolist with one entry per phase before launching anything.
@@ -24,12 +26,12 @@ The N candidates will receive the same prompt, so the prompt is the contract.
 
 1. State the artifact each candidate is producing.
 2. Derive the rubric. State what success looks like for *this* task, then turn it into 3-6 concrete gradeable criteria. The rubric is the picker's tool in Phase D. Candidates only see the task.
-3. Pick the runners. Use the `arena runners` line in `pstack-models.md`. If the sheet or that line is missing, run one each on the defaults in [Models](#models). An `auto` or `inherit-parent` entry in this line or the cross-judge line means the parent model, so omit `model` for it. If the `Agent` tool rejects a configured entry, run that seat on its family's default and say so. Families go by model name, such as Opus, Fable, or Sonnet. With no family match, use the single-role default in [Models](#models). If it rejects a default, use the closest valid slug of the same family from its error message. Spawn more when the arena covers multiple design directions. Same model N times when the work is generation-bound rather than judgment-sensitive.
+3. Pick the runners. Use the `arena runners` line in `pstack-models.md`. If the sheet or that line is missing, run one each on the defaults in [Models](#models). Follow `../poteto-mode/references/claude-code-delegation.md`: `auto` omits `model` and accepts runtime selection; `inherit-parent` uses `pstack:inherit` with `model` omitted. If the `Agent` tool rejects a configured entry, run that seat on its family's default and say so. Families go by model name, such as Opus, Fable, or Sonnet. With no family match, use the single-role default in [Models](#models). If it rejects a default, use the closest valid slug of the same family from its error message. Spawn more when the arena covers multiple design directions. Same model N times when the work is generation-bound rather than judgment-sensitive.
 4. Assign output paths. Each candidate writes to its own location (a git worktree where possible, otherwise `/tmp/arena-<slug>/candidate-<n>/`), per the **separate-before-serializing-shared-state** principle skill.
 
 ## Phase B: Fan out
 
-Spawn all N subagents in one message with `run_in_background: true`, each with the task, the path to the shared grounding, its own output path, and instructions to produce both the artifact and a short rationale.
+Queue all N candidates. Launch up to available session capacity and refill each slot as a candidate finishes. Request background execution when its available tools satisfy the task. Give each the task, shared grounding path, its own output path, and instructions to produce both the artifact and a short rationale. Repository editing candidates each need a separate worktree.
 
 Each rationale names the alternatives the candidate considered and what it rejected.
 
@@ -37,7 +39,7 @@ If a candidate fails to produce output, proceed with N-1 and note the dropout in
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, choose one model from the `arena cross-judge pool` line in `pstack-models.md`. If the sheet or that line is missing, choose from the runner defaults in [Models](#models). Prefer a different model family from the parent's. Spawn one readonly judge subagent on that model. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with the parent's reading in Phase D, not with the candidates themselves. Don't spawn the judge while candidates are still writing.
+After all Phase B candidates complete, choose one model from the `arena cross-judge pool` line in `pstack-models.md`. If the sheet or that line is missing, choose from the runner defaults in [Models](#models). Prefer a different model family from the parent's. Spawn one judge subagent on that model and instruct it to make no writes; Claude Code has no per-call `readonly` argument. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with the parent's reading in Phase D, not with the candidates themselves. Don't spawn the judge while candidates are still writing.
 
 ## Phase D: Pick a base
 
@@ -78,4 +80,4 @@ Role defaults, stamped from `plugins/pstack/models.json` (edit there, rerun `too
 
 ## Reasoning effort
 
-A role value in the override sheet may name a reasoning effort after its model, as in `opus @xhigh`. Levels: `low`, `medium`, `high`, `xhigh`, `max`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no effort, so the dispatch is the usual one. Strip the suffix before reading the model: `inherit-parent` or `auto` still omits `model` at every level, and a model name is passed as `model`. A level picks the effort agent from the `subagent_type` you would otherwise use. `pstack:poteto-agent` becomes `subagent_type: "pstack:poteto-agent-<level>"`. `general-purpose`, or no `subagent_type`, becomes `subagent_type: "pstack:effort-<level>"`. The effort agents set only `effort`, so the model you pass still decides the model.
+A role value in the override sheet may name a reasoning effort after its model, as in `opus @xhigh`. Levels: `low`, `medium`, `high`, `xhigh`, `max`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no agent effort override, so the effective effort follows Claude Code's session and environment settings or caps. Strip the suffix before choosing the model: a model name is passed as `model`; `auto` omits it and accepts Claude Code's runtime default; `inherit-parent` omits it and selects a matching `model: inherit` definition. On Claude Code before 2.1.251, `CLAUDE_CODE_SUBAGENT_MODEL` can override both the invocation and definition. A level picks the effort agent from the `subagent_type` you would otherwise use. `pstack:poteto-agent` becomes `subagent_type: "pstack:poteto-agent-<level>"`; `pstack:poteto-worker` becomes `subagent_type: "pstack:poteto-worker-<level>"`; `general-purpose`, or no `subagent_type`, becomes `subagent_type: "pstack:effort-<level>"`. For `inherit-parent`, use `pstack:poteto-agent-inherit[-<level>]` for the coordinator, `pstack:poteto-worker-inherit[-<level>]` for bounded implementation, or `pstack:inherit[-<level>]` for a generic worker; the bracketed level is omitted for `session`. These definitions set `model: inherit`; explicit model entries still use the non-inherit definitions.

@@ -32,7 +32,7 @@ Write one clear paragraph. If you're unsure about the intent, ask the user befor
 
 ## Step 3, Spawn Reviewers
 
-Launch all reviewers in a single message using the `Agent` tool. Use the `interrogate reviewers` line in the `pstack-models.md` override sheet (`/setup-pstack` lists its path per runtime), one reviewer per entry, extending or shrinking the Reviewer A/B/C labels below to the configured entry count. If the sheet or that line is missing, use the table defaults.
+Read and follow the [Claude Code delegation contract](../poteto-mode/references/claude-code-delegation.md). Queue one reviewer per configured entry, launch up to available capacity, and refill slots as results arrive. Use the `interrogate reviewers` line in the `pstack-models.md` override sheet (`/setup-pstack` lists its path per runtime), extending or shrinking the Reviewer A/B/C labels below to the configured entry count. If the sheet or that line is missing, use the table defaults.
 
 | Subagent | Default model |
 |----------|---------------|
@@ -42,8 +42,8 @@ Launch all reviewers in a single message using the `Agent` tool. Use the `interr
 
 For each reviewer:
 - `subagent_type`: `general-purpose`
-- `model`: the configured `interrogate reviewers` entry, or the table default with no configured line. For an `auto` or `inherit-parent` entry, omit `model` so that reviewer runs on the parent model.
-- `readonly`: `true`
+- `model`: the configured real model, or the table default with no configured line. For `auto`, omit `model` and accept runtime selection. For `inherit-parent`, use the compatible `pstack:inherit` definition and omit `model`.
+- Research only: no writes. There is no Claude Code `Agent` `readonly` parameter. A strict code-only reader needs a read-tool allowlisted definition.
 
 If the `Agent` tool rejects a configured entry, run that reviewer on the table default of its family and say so. Families go by model name, such as Opus, Fable, or Sonnet. With no family match, use Reviewer A's default. If it rejects a table default, check the valid slugs in the `Agent` tool's error message, pick the closest equivalent (prefer the highest-reasoning tier of the same family), spawn with it, and open a separate PR to update the default table. Do not block the review on the slug issue. Never treat an alias entry as a rejected slug or apply either fallback to it.
 
@@ -110,4 +110,4 @@ Present the verdict in this structure:
 
 ## Reasoning effort
 
-A role value in the override sheet may name a reasoning effort after its model, as in `opus @xhigh`. Levels: `low`, `medium`, `high`, `xhigh`, `max`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no effort, so the dispatch is the usual one. Strip the suffix before reading the model: `inherit-parent` or `auto` still omits `model` at every level, and a model name is passed as `model`. A level picks the effort agent from the `subagent_type` you would otherwise use. `pstack:poteto-agent` becomes `subagent_type: "pstack:poteto-agent-<level>"`. `general-purpose`, or no `subagent_type`, becomes `subagent_type: "pstack:effort-<level>"`. The effort agents set only `effort`, so the model you pass still decides the model.
+A role value in the override sheet may name a reasoning effort after its model, as in `opus @xhigh`. Levels: `low`, `medium`, `high`, `xhigh`, `max`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no agent effort override, so the effective effort follows Claude Code's session and environment settings or caps. Strip the suffix before choosing the model: a model name is passed as `model`; `auto` omits it and accepts Claude Code's runtime default; `inherit-parent` omits it and selects a matching `model: inherit` definition. On Claude Code before 2.1.251, `CLAUDE_CODE_SUBAGENT_MODEL` can override both the invocation and definition. A level picks the effort agent from the `subagent_type` you would otherwise use. `pstack:poteto-agent` becomes `subagent_type: "pstack:poteto-agent-<level>"`; `pstack:poteto-worker` becomes `subagent_type: "pstack:poteto-worker-<level>"`; `general-purpose`, or no `subagent_type`, becomes `subagent_type: "pstack:effort-<level>"`. For `inherit-parent`, use `pstack:poteto-agent-inherit[-<level>]` for the coordinator, `pstack:poteto-worker-inherit[-<level>]` for bounded implementation, or `pstack:inherit[-<level>]` for a generic worker; the bracketed level is omitted for `session`. These definitions set `model: inherit`; explicit model entries still use the non-inherit definitions.

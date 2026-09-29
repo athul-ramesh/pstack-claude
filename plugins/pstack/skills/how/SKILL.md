@@ -7,7 +7,7 @@ description: "Use for \"how does X work\", code walkthroughs before changing som
 
 Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
 
-Each spawn below names a role line in `pstack-models.md` and a default in [Models](#models). Set `model` to that line's value, or to the default if the sheet or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If the `Agent` tool rejects a slug, use the default and say so. If it rejects the default, use the closest valid slug of the same family from its error message.
+Read and follow the [Claude Code delegation contract](../poteto-mode/references/claude-code-delegation.md). Each spawn below names a role line in `pstack-models.md` and a default in [Models](#models). Pass a configured real model or the default; `auto` omits `model` and accepts runtime resolution; `inherit-parent` uses `pstack:inherit` and omits `model`. If the `Agent` tool rejects a slug, use the default and say so. If it rejects the default, use the closest valid slug of the same family from its error message.
 
 ## Step 1. Assess Complexity
 
@@ -20,11 +20,11 @@ When in doubt, take the simple path.
 
 ## Step 2a. Explore (complex questions only)
 
-Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Spawn all explorers in a single message:
+Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Queue all angles, launch up to available capacity, and refill slots as results arrive:
 
 - `subagent_type`: `general-purpose`
 - `model`: the `how explorer` line, default in [Models](#models)
-- `readonly`: `true`
+- Research only: no writes. The Claude Code `Agent` tool has no `readonly` argument. For strict code-only access, use an available read-tool allowlisted agent definition.
 
 Each explorer gets the prompt in `references/explorer-prompt.md` with its angle filled in. Then go to Step 3.
 
@@ -34,7 +34,7 @@ Spawn one `Agent` subagent that explores and explains in one pass:
 
 - `subagent_type`: `general-purpose`
 - `model`: the `how explainer` line, default in [Models](#models)
-- `readonly`: `true`
+- Research only: no writes; do not pass a `readonly` argument.
 
 Build its prompt from `references/explainer-prompt.md` without the explorer-findings section. Go to Step 4.
 
@@ -44,7 +44,7 @@ Once all explorers have returned, spawn one `Agent` subagent to synthesize their
 
 - `subagent_type`: `general-purpose`
 - `model`: the `how explainer` line, default in [Models](#models)
-- `readonly`: `true`
+- Research only: no writes; do not pass a `readonly` argument.
 
 Build its prompt from `references/explainer-prompt.md` with every explorer's findings filled in.
 
@@ -65,4 +65,4 @@ Role defaults, stamped from `plugins/pstack/models.json` (edit there, rerun `too
 
 ## Reasoning effort
 
-A role value in the override sheet may name a reasoning effort after its model, as in `opus @xhigh`. Levels: `low`, `medium`, `high`, `xhigh`, `max`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no effort, so the dispatch is the usual one. Strip the suffix before reading the model: `inherit-parent` or `auto` still omits `model` at every level, and a model name is passed as `model`. A level picks the effort agent from the `subagent_type` you would otherwise use. `pstack:poteto-agent` becomes `subagent_type: "pstack:poteto-agent-<level>"`. `general-purpose`, or no `subagent_type`, becomes `subagent_type: "pstack:effort-<level>"`. The effort agents set only `effort`, so the model you pass still decides the model.
+A role value in the override sheet may name a reasoning effort after its model, as in `opus @xhigh`. Levels: `low`, `medium`, `high`, `xhigh`, `max`. Which ones apply depends on the model. A value without `@` takes the sheet's `default effort` line, a level or `session`, and `session` when the sheet has no such line. `session` sets no agent effort override, so the effective effort follows Claude Code's session and environment settings or caps. Strip the suffix before choosing the model: a model name is passed as `model`; `auto` omits it and accepts Claude Code's runtime default; `inherit-parent` omits it and selects a matching `model: inherit` definition. On Claude Code before 2.1.251, `CLAUDE_CODE_SUBAGENT_MODEL` can override both the invocation and definition. A level picks the effort agent from the `subagent_type` you would otherwise use. `pstack:poteto-agent` becomes `subagent_type: "pstack:poteto-agent-<level>"`; `pstack:poteto-worker` becomes `subagent_type: "pstack:poteto-worker-<level>"`; `general-purpose`, or no `subagent_type`, becomes `subagent_type: "pstack:effort-<level>"`. For `inherit-parent`, use `pstack:poteto-agent-inherit[-<level>]` for the coordinator, `pstack:poteto-worker-inherit[-<level>]` for bounded implementation, or `pstack:inherit[-<level>]` for a generic worker; the bracketed level is omitted for `session`. These definitions set `model: inherit`; explicit model entries still use the non-inherit definitions.

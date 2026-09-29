@@ -44,6 +44,7 @@ import {
   strayModelSlugs,
   tableRows,
   validateHooks,
+  validateAgentDefinitions,
 } from "../tools/generate.mjs";
 import { walk } from "../tools/validate-skills.mjs";
 
@@ -305,27 +306,47 @@ describe("lead lines", () => {
 
 describe("effort agents", () => {
   const poteto = "---\nname: poteto-agent\ndescription: Routing contract.\n---\n\n# Poteto subagent\n\nRead the skill.\n";
-  const agents = effortAgents(["high", "max"], poteto);
+  const worker = "---\nname: poteto-worker\ndescription: Bounded worker.\n---\n\n# Poteto worker\n\nFollow the assigned brief.\n";
+  const agents = effortAgents(["high", "max"], poteto, worker);
 
-  test("one general-purpose and one poteto agent per level, each setting only effort", () => {
-    expect(agents.map((a) => a.name)).toEqual(["effort-high", "poteto-agent-high", "effort-max", "poteto-agent-max"]);
+  test("generates generic and bounded workers with distinct runtime and inherited models", () => {
+    expect(agents.map((a) => a.name)).toEqual([
+      "inherit", "poteto-agent-inherit", "poteto-worker-inherit",
+      "effort-high", "inherit-high", "poteto-agent-high", "poteto-agent-inherit-high", "poteto-worker-high", "poteto-worker-inherit-high",
+      "effort-max", "inherit-max", "poteto-agent-max", "poteto-agent-inherit-max", "poteto-worker-max", "poteto-worker-inherit-max",
+    ]);
     for (const agent of agents) {
-      const level = agent.name.split("-").at(-1);
-      expect(agent.text).toContain(`\nname: ${agent.name}\n`);
-      expect(agent.text).toContain(`\neffort: ${level}\n---\n`);
-      expect(agent.text).not.toMatch(/^model:/m);
+      const parsed = parseFrontmatter(agent.text);
+      expect(parsed.data.name).toBe(agent.name);
+      expect(typeof parsed.data.description).toBe("string");
+      expect(parsed.body.trim()).not.toBe("");
+      if (agent.name.includes("inherit")) expect(parsed.data.model).toBe("inherit");
+      else expect(parsed.data.model).toBeUndefined();
+      const level = agent.name.match(/-(high|max)$/)?.[1];
+      if (level) expect(parsed.data.effort).toBe(level);
+      else expect(parsed.data.effort).toBeUndefined();
     }
   });
 
-  test("the poteto variant carries poteto-agent's body verbatim", () => {
-    expect(agents[1].text.endsWith("---\n\n# Poteto subagent\n\nRead the skill.\n")).toBe(true);
-    expect(agents[1].text.match(/^---$/gm)).toHaveLength(2);
+  test("coordinator and worker variants carry their respective base prompts", () => {
+    expect(agents.find((a) => a.name === "poteto-agent-high").text.endsWith(parseFrontmatter(poteto).body)).toBe(true);
+    expect(agents.find((a) => a.name === "poteto-worker-high").text.endsWith(parseFrontmatter(worker).body)).toBe(true);
+    expect(agents.find((a) => a.name === "poteto-worker-inherit-max").text.endsWith(parseFrontmatter(worker).body)).toBe(true);
   });
 
-  test("the poteto variant's description defers to pstack:poteto-agent rather than copying its routing contract", () => {
-    const description = agents[1].text.match(/^description: (.*)$/m)[1];
-    expect(description).toContain("in place of `pstack:poteto-agent`");
-    expect(description).not.toContain("Routing contract.");
+  test("all shipped agent definitions have parseable YAML and matching names", () => {
+    expect(() => validateAgentDefinitions(pluginRoot)).not.toThrow();
+  });
+
+  test("agent validation reports malformed frontmatter with its file", () => {
+    const root = mkdtempSync(join(tmpdir(), "pstack-agent-yaml-"));
+    try {
+      mkdirSync(join(root, "agents"));
+      writeFileSync(join(root, "agents/broken.md"), "---\nname: broken\ndescription: `unquoted backtick`\n---\n");
+      expect(() => validateAgentDefinitions(root)).toThrow("./agents/broken.md: invalid agent YAML frontmatter");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   const pluginRoot = join(fileURLToPath(new URL("..", import.meta.url)), "plugins/pstack");
@@ -333,7 +354,10 @@ describe("effort agents", () => {
   test("plugin.json lists both hand-written and generated agents", () => {
     const listed = JSON.parse(readFileSync(join(pluginRoot, ".claude-plugin/plugin.json"), "utf8")).agents;
     expect(listed).toContain("./agents/poteto-agent.md");
+    expect(listed).toContain("./agents/poteto-worker.md");
     expect(listed).toContain("./effort-agents/effort-high.md");
+    expect(listed).toContain("./effort-agents/poteto-agent-inherit-high.md");
+    expect(listed).toContain("./effort-agents/poteto-worker-inherit-high.md");
   });
 
   test("stamping the agents list keeps every other manifest field", () => {
@@ -348,6 +372,9 @@ describe("effort agents", () => {
     for (const level of ["low", "max", "high"]) expect(text).toContain(`\`${level}\``);
     expect(text).toContain('subagent_type: "pstack:effort-<level>"');
     expect(text).toContain('subagent_type: "pstack:poteto-agent-<level>"');
+    expect(text).toContain('subagent_type: "pstack:poteto-worker-<level>"');
+    expect(text).toContain("`pstack:inherit[-<level>]`");
+    expect(text).toContain("`pstack:poteto-agent-inherit[-<level>]`");
   });
 });
 
@@ -379,7 +406,7 @@ describe("plan, changes, apply", () => {
     const root = repoCopy();
     const current = readFileSync(join(root, STUB), "utf8");
     writeFileSync(join(root, STUB), "stale\n");
-    writeFileSync(join(root, STRAY), "orphan\n");
+    writeFileSync(join(root, STRAY), "---\nname: stray\ndescription: Test orphan.\n---\n");
     const before = snapshot(root);
     const first = plan(root);
     expect(plan(root)).toEqual(first);
@@ -391,7 +418,7 @@ describe("plan, changes, apply", () => {
   test("--check on a stale tree exits 1 naming each stale path, writes nothing, and passes once regenerated", () => {
     const root = repoCopy();
     writeFileSync(join(root, STUB), "stale\n");
-    writeFileSync(join(root, STRAY), "orphan\n");
+    writeFileSync(join(root, STRAY), "---\nname: stray\ndescription: Test orphan.\n---\n");
     const before = snapshot(root);
     const run = (...args) => spawnSync(process.execPath, [join(root, "tools/generate.mjs"), ...args], { encoding: "utf8" });
     const stale = run("--check");

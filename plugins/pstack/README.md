@@ -7,7 +7,7 @@ Tell `poteto-mode` your goal and it invokes the workflow that fits: reproduce an
 ## What it contains
 
 - Skills: Markdown instructions the agent reads. Public ones appear as `/pstack:<name>` slash commands.
-- Agents: `pstack:poteto-agent` and `pstack:comment-sicko`, plus one agent per reasoning-effort level.
+- Agents: `pstack:poteto-agent` for an independently delegated workflow, `pstack:poteto-worker` for bounded work inside one, and `pstack:comment-sicko`, plus reasoning-effort variants.
 - A SessionStart hook that injects the poteto-mode routing mandate unless your `pstack-models.md` sheet turns it off.
 - Local scripts for watching and shipping pull requests, orchestrating multi-phase plans, and auditing worktrees.
 
@@ -18,6 +18,7 @@ pstack runs no server, collects no telemetry, and sends no data anywhere itself.
 ## Links
 
 - [Skills, slash commands, runtime setup, and model configuration](https://github.com/athul-ramesh/pstack-claude/blob/main/docs/reference.md)
+- [Claude Code delegation and version support](https://github.com/athul-ramesh/pstack-claude/blob/main/docs/reference.md#delegation-and-version-support)
 - [Issues and support](https://github.com/athul-ramesh/pstack-claude/issues)
 - [Security policy](https://github.com/athul-ramesh/pstack-claude/blob/main/SECURITY.md)
 

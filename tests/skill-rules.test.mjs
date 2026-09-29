@@ -44,12 +44,32 @@ const rules = [
   {
     source: "#58 stop before you re-delegate",
     file: "poteto-mode/SKILL.md",
-    phrase: "Stop the abandoned agent first, and confirm it stopped.",
+    phrase: "use `TaskStop` to cancel a running agent before assigning conflicting writes.",
   },
   {
     source: "#58 delegate isolation",
     file: "poteto-mode/playbooks/feature.md",
     phrase: "Give every file-writing delegate its own worktree",
+  },
+  {
+    source: "Claude Code delegates have distinct coordinator and worker roles",
+    file: "poteto-mode/playbooks/feature.md",
+    phrase: "Delegate code-writing to `pstack:poteto-worker`",
+  },
+  {
+    source: "Claude Code resumes with SendMessage",
+    file: "poteto-mode/playbooks/orchestrate.md",
+    phrase: "resume a completed one with `SendMessage`",
+  },
+  {
+    source: "Claude Code concurrent capacity is session-wide",
+    file: "poteto-mode/playbooks/orchestrate.md",
+    phrase: "Count descendants and resumed agents, not just direct children.",
+  },
+  {
+    source: "Claude Code worktree base is explicit",
+    file: "poteto-mode/playbooks/feature.md",
+    phrase: "native isolation starts from the default branch",
   },
   {
     source: "#59 item 1 drain the roster",

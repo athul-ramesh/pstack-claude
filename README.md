@@ -15,6 +15,8 @@ Run in Claude Code:
 
 Run `/pstack:setup-pstack` to change model defaults, set a reasoning effort per role (for example `arena runners: opus @xhigh, fable @max`, which Claude Code dispatches through the plugin's `pstack:effort-<level>` or `pstack:poteto-agent-<level>` agents; roles without a level keep the session's effort unless the sheet's `default effort` line names one), or turn automatic routing off.
 
+Delegation uses Claude Code's local subagents. A bounded code task uses `pstack:poteto-worker`; a separately delegated workflow uses `pstack:poteto-agent` as its coordinator. The playbooks require separate worktrees for concurrent file writers and a check of the intended base, since native isolation starts from the repository's default branch by default. See [delegation and version support](docs/reference.md#delegation-and-version-support).
+
 ## Getting started
 
 ```text

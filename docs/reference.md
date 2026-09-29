@@ -50,6 +50,14 @@ pstack is a Claude Code plugin. The [marketplace install](../README.md#install) 
 | --- | --- |
 | Claude Code | Install the marketplace plugin. Skills use Claude tool names and model defaults; the plugin installs automatic routing. |
 
+### Delegation and version support
+
+This port targets Claude Code only. `pstack:poteto-agent` coordinates a whole delegated workflow; `pstack:poteto-worker` handles a bounded implementation or verification task within one. Claude Code creates subagents with `Agent`, resumes or steers an existing agent with `SendMessage` to its ID or name, and cancels with `TaskStop`. Completion notifications and the task list report progress. Background agents have a reduced built-in tool set, so a task needing an unavailable tool must run in a supported context. The [delegation contract](../plugins/pstack/skills/poteto-mode/references/claude-code-delegation.md) holds the exact dispatch rules.
+
+Each concurrent file writer needs a separate worktree or exclusive working directory; a branch name alone does not isolate files. `isolation: "worktree"` creates a worktree from the repository's default branch by default, not the parent session's `HEAD`, and does not carry uncommitted parent changes. Verify and explicitly seed the intended base before a worker edits or tests dependent code. Integration must check the worker's base and current head before accepting its result.
+
+Claude Code defaults to 20 running subagents per session on versions with the concurrency limit, shared by nested agents. `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` changes that cap; the playbooks dispatch rolling windows within available capacity. Current model precedence is invocation model, agent definition, `CLAUDE_CODE_SUBAGENT_MODEL`, then parent model. On Claude Code v2.1.250 and earlier, the environment variable may take precedence over a requested model; v2.1.257 adds `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` to force that override. The precise model and effort should be checked in `/tasks` when a comparison depends on them. These are [documented Claude Code behaviors](https://code.claude.com/docs/en/sub-agents), not a claim that every runtime version has been exercised by this repository.
+
 ### Automatic routing
 
 The plugin installs a [SessionStart hook](../plugins/pstack/hooks/session-start.sh) that loads a short [routing instruction](../plugins/pstack/hooks/session-start-context.md) on startup, resume, clear, and compact. The instruction invokes `poteto-mode` when a task meets any of these conditions:

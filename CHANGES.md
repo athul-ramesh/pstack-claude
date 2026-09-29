@@ -2,6 +2,10 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first.
 
+## 0.10.1 - Claude Code delegation contract
+
+Delegation instructions now distinguish a workflow coordinator from a bounded implementation worker, use Claude Code's `Agent` creation, `SendMessage` continuation, and `TaskStop` cancellation lifecycle, and account for the session-wide running-agent cap with rolling dispatch. Writer playbooks require a distinct worktree and a verified starting SHA because native worktrees begin at the default branch rather than the parent session's `HEAD`; a branch name alone does not isolate files. The shared contract documents model and effort precedence, including the older v2.1.250 environment override and the v2.1.257 force override, plus background-tool limits. Public documentation names the Claude Code version boundary and the verification limit.
+
 ## 0.10.0 - a standalone Claude Code plugin
 
 This release consolidates the repository into a Claude-Code-only product. The Codex plugin build and its marketplace catalog and prompt stubs, the skills-only and other-harness installation paths, and the upstream-sync machinery (`tools/sync.mjs`, `tools/substitutions.json`, `tools/upstream.json`, `tools/forks.json`) are removed. The repository is a fork of cursor/plugins that synced against upstream through v0.9.50 and is now maintained standalone. Skill content, workflows, playbooks, agents, hooks, and scripts are unchanged.
