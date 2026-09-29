@@ -1,6 +1,10 @@
 # CHANGES
 
-This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines which changes belong upstream.
+This file is the release changelog, with one `## <version> - <title>` entry per release, newest first.
+
+## 0.10.0 - a standalone Claude Code plugin
+
+This release consolidates the repository into a Claude-Code-only product. The Codex plugin build and its marketplace catalog and prompt stubs, the skills-only and other-harness installation paths, and the upstream-sync machinery (`tools/sync.mjs`, `tools/substitutions.json`, `tools/upstream.json`, `tools/forks.json`) are removed. The repository is a fork of cursor/plugins that synced against upstream through v0.9.50 and is now maintained standalone. Skill content, workflows, playbooks, agents, hooks, and scripts are unchanged.
 
 ## 0.9.50 - the review's open items and the sync's symlink and binary seams
 
